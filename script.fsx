@@ -14,8 +14,8 @@ let aprToMonth a = a / 12M / 100M
 let yearsToMonths years = years * 12
 
 let ratesGood i = if i < 24 then 2M else 4M
-let ratesMiddle = List.append [2.49M;2.49M] (List.replicate 23 5M)
-let ratesBad = List.append [3M;3M] (List.replicate 23 6M)
+let ratesMiddle i = if i < 24 then 2.49M else 5M
+let ratesBad i = if i < 24 then 3M else 6M
 
 let mortgageValue = 280000.00M
 let years = 25
@@ -47,18 +47,29 @@ let calcStats years (calcRate:int -> decimal) mortgageValue =
         let newLeft = s.mortgageLeft - net
         {index=m;mortgageLeft=newLeft;payment=payment;net=net;interest=interest; }   
     ) initial
+    |> List.tail
+
+let mortgageCharts (title, data) =
+    let paymentTotal = data |> List.map (fun p -> p.payment) |> List.sum;
+    let netTotal = data |> List.map (fun p -> p.net) |> List.sum;
+    let interestTotal = data |> List.map (fun p -> p.interest) |> List.sum;
+
+    let repayments = 
+        Chart.Combine [
+            Chart.Line (data |> List.map (fun p -> p.index,p.payment),Name="Repayments");
+            Chart.Line (data |> List.map (fun p -> p.index,p.interest),Name="Interest");
+            Chart.Line (data |> List.map (fun p -> p.index,p.net),Name="Net");
+            ]
+        |> Chart.WithTitle title
+        |> Chart.WithXAxis(Title="Months")
+        |> Chart.WithYAxis(Title="GBP per month")
+        |> Chart.WithLegend(Title="Legend", Docking=ChartTypes.Docking.Bottom, InsideArea=false)
     
-let res = calcStats 25 ratesGood mortgageValue |> List.tail
-
-let paymentTotal = res |> List.map (fun p -> p.payment) |> List.sum;
-let netTotal = res |> List.map (fun p -> p.net) |> List.sum;
-let interestTotal = res |> List.map (fun p -> p.interest) |> List.sum;
-
-Chart.Combine [
-    Chart.Line (res |> List.map (fun p -> p.index,p.payment),Name="Repayments");
-    Chart.Line (res |> List.map (fun p -> p.index,p.interest),Name="Interest");
-    Chart.Line (res |> List.map (fun p -> p.index,p.net),Name="Net");
-    ]
-|> Chart.WithXAxis(Title="Months")
-|> Chart.WithYAxis(Title="Pounds per month")
-|> Chart.WithLegend(Title="Legend", Docking=ChartTypes.Docking.Bottom, InsideArea=false)
+    let totals =
+        Chart.Pie [sprintf "Mortgage GBP%.2f" netTotal,netTotal; sprintf "Interest GBP%.2f" interestTotal,interestTotal;]
+    
+    Chart.Columns [repayments;totals]
+  
+mortgageCharts ("Good Rates", calcStats 25 ratesGood mortgageValue) |> Chart.Show
+mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle mortgageValue) |> Chart.Show
+mortgageCharts ("Bad Rates", calcStats 25 ratesBad mortgageValue) |> Chart.Show
