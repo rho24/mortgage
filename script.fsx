@@ -1,5 +1,14 @@
-﻿#load "packages/FsLab/FsLab.fsx"
+﻿(*** hide ***)
+#load "packages/FsLab/FsLab.fsx"
+(**
 
+Mortgages
+=================
+
+
+*)
+
+(*** hide ***)
 open FSharp.Charting
 
 let ( ** ) d n = 
@@ -80,9 +89,6 @@ let mortgageCharts (title, data) =
         Chart.Pie [sprintf "Mortgage GBP%.2f" netTotal,netTotal; sprintf "Interest GBP%.2f" interestTotal,interestTotal;]
     
     Chart.Columns [repayments;totals]
-    
-
-(*** define-output:chart ***)
 
 (*  
 mortgageCharts ("Good Rates", calcStats 25 ratesGood payExpectedPerMonth mortgageValue) |> Chart.Show
@@ -90,7 +96,11 @@ mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle payExpectedPerMonth mor
 mortgageCharts ("Bad Rates", calcStats 25 ratesBad payExpectedPerMonth mortgageValue) |> Chart.Show
 *)
 
-mortgageCharts ("Middle Rates - pay normal", calcStats 25 ratesMiddle payExpectedPerMonth mortgageValue)
-mortgageCharts ("Middle Rates - page £2000", calcStats 25 ratesMiddle pay2000PerMonth mortgageValue)
 
-(*** include-it:chart ***)
+(*** define-output:chart1 ***)
+mortgageCharts ("Middle Rates - pay normal", calcStats 25 ratesMiddle payExpectedPerMonth mortgageValue)
+(*** include-it:chart1 ***)
+
+(*** define-output:chart2 ***)
+mortgageCharts ("Middle Rates - page £2000", calcStats 25 ratesMiddle pay2000PerMonth mortgageValue)
+(*** include-it:chart2 ***)
