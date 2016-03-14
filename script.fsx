@@ -9,7 +9,7 @@ Mortgages
 *)
 
 (*** hide ***)
-open FSharp.Charting
+open XPlot.GoogleCharts
 
 let ( ** ) d n = 
     match n with
@@ -69,26 +69,35 @@ let calcStats years (calcRate:int -> decimal) calcRepayement mortgageValue =
     ) initial
     |> List.tail
 
-let mortgageCharts (title, data) =
-    let paymentTotal = data |> List.map (fun p -> p.payment) |> List.sum;
-    let netTotal = data |> List.map (fun p -> p.net) |> List.sum;
-    let interestTotal = data |> List.map (fun p -> p.interest) |> List.sum;
 
-    let repayments = 
-        Chart.Combine [
-            Chart.Line (data |> List.map (fun p -> float p.index/12.,p.payment),Name="Repayments");
-            Chart.Line (data |> List.map (fun p -> float p.index/12.,p.interest),Name="Interest");
-            Chart.Line (data |> List.map (fun p -> float p.index/12.,p.net),Name="Net");
-            ]
-        |> Chart.WithTitle title
-        |> Chart.WithXAxis(Title="Years")
-        |> Chart.WithYAxis(Title="GBP per month")
-        |> Chart.WithLegend(Title="Legend", Docking=ChartTypes.Docking.Bottom, InsideArea=false)
+let mortgageTable scenarios =
+    let getAxis field (title,data) = title,(data |> List.map field |> List.sum |> (fun t -> System.String.Format("{0:C}", t)))
     
-    let totals =
-        Chart.Pie [sprintf "Mortgage GBP%.2f" netTotal,netTotal; sprintf "Interest GBP%.2f" interestTotal,interestTotal;]
+    [
+        scenarios |> List.map (getAxis (fun d-> d.net) );
+        scenarios |> List.map (getAxis (fun d-> d.payment) );
+        scenarios |> List.map (getAxis (fun d-> d.interest) );
+    ]
+    |> Chart.Table
+    |> Chart.WithLabels ["Name";"Net";"Payments";"Interest"]
     
-    Chart.Columns [repayments;totals]
+let mortgageCharts (title, data) =
+    let opts = 
+        Options( 
+            vAxes = [|Axis(title="GBP per month");Axis(title="Mortgage left")|],
+            series = [|
+                for _ in 0 .. 2 -> Series(targetAxisIndex = 0)
+                yield Series(targetAxisIndex = 1)
+                |])
+    Chart.Line [
+        data |> List.map (fun p -> float p.index/12.,p.payment);
+        data |> List.map (fun p -> float p.index/12.,p.interest);
+        data |> List.map (fun p -> float p.index/12.,p.net);
+        data |> List.map (fun p -> float p.index/12.,p.mortgageLeft);
+        ]
+    |> Chart.WithOptions opts
+    |> Chart.WithTitle title
+    |> Chart.WithLabels ["Repayments";"Interest";"Net";"Left"]
 
 (*  
 mortgageCharts ("Good Rates", calcStats 25 ratesGood payExpectedPerMonth mortgageValue) |> Chart.Show
@@ -96,11 +105,39 @@ mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle payExpectedPerMonth mor
 mortgageCharts ("Bad Rates", calcStats 25 ratesBad payExpectedPerMonth mortgageValue) |> Chart.Show
 *)
 
+let scenarios = [
+    "Good Rates - pay normal", calcStats 25 ratesGood payExpectedPerMonth mortgageValue;
+    "Good Rates - pay £2000", calcStats 25 ratesGood pay2000PerMonth mortgageValue;
+    "Middle Rates - pay normal", calcStats 25 ratesMiddle payExpectedPerMonth mortgageValue;
+    "Middle Rates - pay £2000", calcStats 25 ratesMiddle pay2000PerMonth mortgageValue;
+    "Bad Rates - pay normal", calcStats 25 ratesBad payExpectedPerMonth mortgageValue;
+    "Bad Rates - pay £2000", calcStats 25 ratesBad pay2000PerMonth mortgageValue;
+]
+1.0.ToString()
+(*** define-output:table1 ***)
+mortgageTable  scenarios
+(*** include-it:table1 ***)
 
 (*** define-output:chart1 ***)
-mortgageCharts ("Middle Rates - pay normal", calcStats 25 ratesMiddle payExpectedPerMonth mortgageValue)
+mortgageCharts scenarios.[0]
 (*** include-it:chart1 ***)
 
 (*** define-output:chart2 ***)
-mortgageCharts ("Middle Rates - page £2000", calcStats 25 ratesMiddle pay2000PerMonth mortgageValue)
+mortgageCharts scenarios.[1]
 (*** include-it:chart2 ***)
+
+(*** define-output:chart3 ***)
+mortgageCharts scenarios.[2]
+(*** include-it:chart3 ***)
+
+(*** define-output:chart4 ***)
+mortgageCharts scenarios.[3]
+(*** include-it:chart4 ***)
+
+(*** define-output:chart5 ***)
+mortgageCharts scenarios.[4]
+(*** include-it:chart5 ***)
+
+(*** define-output:chart6 ***)
+mortgageCharts scenarios.[5]
+(*** include-it:chart6 ***)
