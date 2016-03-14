@@ -1,3 +1,5 @@
 source https://www.nuget.org/api/v2
+nuget FsLab
+nuget FsLab.Runner
 nuget FAKE
-nuget FSLab
+nuget Suave

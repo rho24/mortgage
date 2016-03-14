@@ -80,11 +80,17 @@ let mortgageCharts (title, data) =
         Chart.Pie [sprintf "Mortgage GBP%.2f" netTotal,netTotal; sprintf "Interest GBP%.2f" interestTotal,interestTotal;]
     
     Chart.Columns [repayments;totals]
+    
+
+(*** define-output:chart ***)
+
 (*  
 mortgageCharts ("Good Rates", calcStats 25 ratesGood payExpectedPerMonth mortgageValue) |> Chart.Show
 mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle payExpectedPerMonth mortgageValue) |> Chart.Show
 mortgageCharts ("Bad Rates", calcStats 25 ratesBad payExpectedPerMonth mortgageValue) |> Chart.Show
 *)
 
-mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle payExpectedPerMonth mortgageValue) |> Chart.Show
-mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle pay2000PerMonth mortgageValue) |> Chart.Show
+mortgageCharts ("Middle Rates - pay normal", calcStats 25 ratesMiddle payExpectedPerMonth mortgageValue)
+mortgageCharts ("Middle Rates - page £2000", calcStats 25 ratesMiddle pay2000PerMonth mortgageValue)
+
+(*** include-it:chart ***)

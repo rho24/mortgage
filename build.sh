@@ -1,33 +1,29 @@
 #!/bin/bash
 if test "$OS" = "Windows_NT"
 then
-  # use .Net
-
-  .paket/paket.bootstrapper.exe
-  exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-  	exit $exit_code
-  fi
-
-  .paket/paket.exe restore
-  exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-  	exit $exit_code
-  fi
-
-  packages/FAKE/tools/FAKE.exe $@ --fsiargs build.fsx
+  MONO=""
 else
-  # use mono
-  mono .paket/paket.bootstrapper.exe
-  exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-  	exit $exit_code
-  fi
+  MONO="mono"
+fi
 
-  mono .paket/paket.exe restore
+if test "$1" = "quickrun"
+then
+  $MONO packages/FAKE/tools/FAKE.exe run --fsiargs -d:NO_FSI_ADDPRINTER build.fsx
+else
+  $MONO .paket/paket.bootstrapper.exe
   exit_code=$?
   if [ $exit_code -ne 0 ]; then
-  	exit $exit_code
+    exit $exit_code
   fi
-  mono packages/FAKE/tools/FAKE.exe $@ --fsiargs -d:MONO build.fsx
+  if [ -e "paket.lock" ]
+  then
+    $MONO .paket/paket.exe restore
+  else
+    $MONO .paket/paket.exe install
+  fi
+  exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+	  exit $exit_code
+  fi
+  $MONO packages/FAKE/tools/FAKE.exe $@ --fsiargs -d:NO_FSI_ADDPRINTER build.fsx
 fi
