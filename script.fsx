@@ -17,11 +17,14 @@ let ratesGood i = if i < 24 then 2M else 4M
 let ratesMiddle i = if i < 24 then 2.49M else 5M
 let ratesBad i = if i < 24 then 3M else 6M
 
+let payExpectedPerMonth i expectedPayment = expectedPayment
+let pay2000PerMonth i expectedPayment = 2000M 
+
 let mortgageValue = 280000.00M
 let years = 25
 let r = yearsToMonths years
 
-let zeroInterestAmoug = mortgageValue / decimal r
+let zeroInterestAmount = mortgageValue / decimal r
 
 let initialMonthlyRepayment = monthlyRepayment (aprToMonth 2M) r mortgageValue
 let laterMonthlyRepayment = monthlyRepayment (aprToMonth 6M) r mortgageValue
@@ -35,17 +38,25 @@ type repayment = {
 }
 
 
-let calcStats years (calcRate:int -> decimal) mortgageValue =
+let calcStats years (calcRate:int -> decimal) calcRepayement mortgageValue =
     let months = yearsToMonths years
     let initial:repayment = {index=0;mortgageLeft=mortgageValue;payment=0M;net=0M;interest=0M} 
     [1 .. months]
     |> List.scan (fun s m -> 
+        match s.mortgageLeft with
+        | 0M -> {index=m;mortgageLeft=0M;payment=0M;net=0M;interest=0M;}
+        | _ ->   
         let rate = calcRate m |> aprToMonth
-        let payment = monthlyRepayment rate (months - m + 1) s.mortgageLeft
+        let expectedMonthlyRepayment = monthlyRepayment rate (months - m + 1) s.mortgageLeft
+        let payment = calcRepayement m expectedMonthlyRepayment
         let interest = rate * s.mortgageLeft
         let net = payment - interest
-        let newLeft = s.mortgageLeft - net
-        {index=m;mortgageLeft=newLeft;payment=payment;net=net;interest=interest; }   
+        match s.mortgageLeft - net with
+        | newLeft when newLeft > 0M ->
+            {index=m;mortgageLeft=newLeft;payment=payment;net=net;interest=interest;}
+        | _ ->
+            {index=m;mortgageLeft=0M;payment=s.mortgageLeft+interest;net=s.mortgageLeft;interest=interest;}
+        
     ) initial
     |> List.tail
 
@@ -56,12 +67,12 @@ let mortgageCharts (title, data) =
 
     let repayments = 
         Chart.Combine [
-            Chart.Line (data |> List.map (fun p -> p.index,p.payment),Name="Repayments");
-            Chart.Line (data |> List.map (fun p -> p.index,p.interest),Name="Interest");
-            Chart.Line (data |> List.map (fun p -> p.index,p.net),Name="Net");
+            Chart.Line (data |> List.map (fun p -> float p.index/12.,p.payment),Name="Repayments");
+            Chart.Line (data |> List.map (fun p -> float p.index/12.,p.interest),Name="Interest");
+            Chart.Line (data |> List.map (fun p -> float p.index/12.,p.net),Name="Net");
             ]
         |> Chart.WithTitle title
-        |> Chart.WithXAxis(Title="Months")
+        |> Chart.WithXAxis(Title="Years")
         |> Chart.WithYAxis(Title="GBP per month")
         |> Chart.WithLegend(Title="Legend", Docking=ChartTypes.Docking.Bottom, InsideArea=false)
     
@@ -69,7 +80,11 @@ let mortgageCharts (title, data) =
         Chart.Pie [sprintf "Mortgage GBP%.2f" netTotal,netTotal; sprintf "Interest GBP%.2f" interestTotal,interestTotal;]
     
     Chart.Columns [repayments;totals]
-  
-mortgageCharts ("Good Rates", calcStats 25 ratesGood mortgageValue) |> Chart.Show
-mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle mortgageValue) |> Chart.Show
-mortgageCharts ("Bad Rates", calcStats 25 ratesBad mortgageValue) |> Chart.Show
+(*  
+mortgageCharts ("Good Rates", calcStats 25 ratesGood payExpectedPerMonth mortgageValue) |> Chart.Show
+mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle payExpectedPerMonth mortgageValue) |> Chart.Show
+mortgageCharts ("Bad Rates", calcStats 25 ratesBad payExpectedPerMonth mortgageValue) |> Chart.Show
+*)
+
+mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle payExpectedPerMonth mortgageValue) |> Chart.Show
+mortgageCharts ("Middle Rates", calcStats 25 ratesMiddle pay2000PerMonth mortgageValue) |> Chart.Show
