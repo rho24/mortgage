@@ -55,11 +55,10 @@ let netTotal = res |> List.map (fun p -> p.net) |> List.sum;
 let interestTotal = res |> List.map (fun p -> p.interest) |> List.sum;
 
 Chart.Combine [
-    // res |> List.map (fun p -> p.index,p.mortgageLeft) |> Chart.Line;
-    res |> List.map (fun p -> p.index,p.payment) |> Chart.Line;
-    res |> List.map (fun p -> p.index,p.interest) |> Chart.Line;
-    res |> List.map (fun p -> p.index,p.net) |> Chart.Line;
+    Chart.Line (res |> List.map (fun p -> p.index,p.payment),Name="Repayments");
+    Chart.Line (res |> List.map (fun p -> p.index,p.interest),Name="Interest");
+    Chart.Line (res |> List.map (fun p -> p.index,p.net),Name="Net");
     ]
-// List.init (int numberOfPayments) (fun y -> y)
-// |> List.scan (fun amountLeft month -> amountLeft + (initialMonthlyRate * amountLeft) - initialMonthlyRepayment) mortgageValue
-// |> Chart.Line
+|> Chart.WithXAxis(Title="Months")
+|> Chart.WithYAxis(Title="Pounds per month")
+|> Chart.WithLegend(Title="Legend", Docking=ChartTypes.Docking.Bottom, InsideArea=false)
